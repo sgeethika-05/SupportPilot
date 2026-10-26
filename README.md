@@ -137,6 +137,15 @@ Automatic evaluation scores are useful diagnostic signals; they should not be in
 
 ## Architecture
 
+SupportPilot uses a modular full-stack architecture that separates the user interface, backend services, data storage, and AI processing.
+
+- **Frontend:** React and TypeScript provide the user interface.
+- **Backend:** FastAPI handles API requests, authentication, ticket workflows, and AI service integration.
+- **Data layer:** PostgreSQL stores application data, while pgvector supports semantic search over knowledge-base embeddings.
+- **AI layer:** Google Gemini generates contextual response drafts using retrieved knowledge-base content.
+- **Review layer:** Human reviewers can approve, reject, or escalate AI-generated drafts before customer delivery.
+
+## Technology Stack
 SupportPilot follows a frontend/backend architecture with a relational database and vector search.
 
 | Layer | Technology | Responsibility |
