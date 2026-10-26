@@ -1,212 +1,417 @@
 ﻿# SupportPilot — AI Support Desk Copilot
 
-A complete, portfolio-ready full-stack AI support desk application with semantic search, RAG-powered answer drafting, human-in-the-loop approval, and AI evaluation.
+**An AI-powered support platform that helps support teams find relevant knowledge, draft grounded responses, and review AI-generated answers before they reach customers.**
+
+SupportPilot is a full-stack application built around Retrieval-Augmented Generation (RAG), semantic search, human-in-the-loop approval, and AI evaluation. It combines a React frontend, FastAPI backend, PostgreSQL with pgvector, and Google Gemini to support knowledge-assisted customer service workflows.
+
+> **Core principle:** AI assists the support agent; the agent remains in control of the final response.
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Key Features](#key-features)
+- [How It Works](#how-it-works)
+- [Architecture](#architecture)
+- [Technology Stack](#technology-stack)
+- [AI and RAG Pipeline](#ai-and-rag-pipeline)
+- [Security and Responsible AI](#security-and-responsible-ai)
+- [Getting Started](#getting-started)
+- [Environment Variables](#environment-variables)
+- [Running Tests](#running-tests)
+- [Project Structure](#project-structure)
+- [Limitations and Future Improvements](#limitations-and-future-improvements)
+
+## Overview
+
+Customer support teams often need to search documentation, classify tickets, draft replies, and escalate issues that require human judgment.
+
+SupportPilot brings these workflows together in one application.
+
+The system retrieves relevant knowledge-base content, uses an AI model to generate context-grounded draft responses, and provides review workflows for approval, rejection, or escalation.
+
+### What makes SupportPilot different?
+
+- **Retrieval before generation:** Responses use retrieved knowledge-base passages instead of relying solely on a language model's general knowledge.
+- **Traceable answers:** Draft responses include source citations to help agents verify supporting information.
+- **Human-in-the-loop review:** AI-generated drafts are not automatically sent to customers.
+- **Retrieval and answer evaluation:** Built-in evaluation workflows measure retrieval quality, groundedness, and citation precision.
+- **Security-aware workflows:** Authentication, role-based access control, validation, and audit logging support safer operations.
+
+## Key Features
+
+### 1. Support Dashboard
+- Ticket counts and status summaries.
+- Urgency distribution and resolution statistics.
+- Knowledge-base statistics.
+
+### 2. Ticket Management
+- Create, search, filter, and list support tickets.
+- Track ticket status and assignment.
+- Persist ticket changes in PostgreSQL.
+
+### 3. AI Support Copilot
+- Ask questions about customer-support issues.
+- Retrieve relevant knowledge-base passages.
+- Generate contextual response drafts with citations.
+- Escalate questions when available evidence or confidence is insufficient.
+
+### 4. Knowledge Base Ingestion
+- Upload PDF, TXT, and Markdown documents.
+- Extract text and split it into overlapping chunks.
+- Generate embeddings and store them in pgvector.
+- Track document ingestion status.
+
+### 5. RAG Lab
+- Explore semantic search results.
+- Inspect retrieved chunks and similarity scores.
+- Configure retrieval parameters such as top-k and similarity threshold.
+
+### 6. AI Ticket Classification
+- Classify ticket categories and urgency.
+- Generate confidence and escalation recommendations.
+- Validate structured AI outputs using Pydantic.
+- Allow manual overrides.
+
+### 7. Draft Review and Approval
+- Generate AI-assisted response drafts.
+- Edit, approve, reject, or escalate drafts.
+- Preserve an audit trail of review actions.
+- Keep approval separate from actual message delivery.
+
+### 8. AI Evaluation
+Evaluate retrieval and generated responses using:
+- **Recall@K:** Whether relevant information appears in the retrieved results.
+- **Groundedness:** Whether generated answers are supported by the available evidence.
+- **Citation precision:** Whether citations appropriately support the answer.
+
+Automatic evaluation scores are useful diagnostic signals; they should not be interpreted as proof that every answer is factually correct.
+
+### 9. Security and Administration
+- JWT-based authentication.
+- Agent and admin roles.
+- Input validation and audit logs.
+- Prompt-injection-resistant handling of retrieved documents.
+
+## How It Works
+
+```text
+             Support Agent
+                  |
+                  v
+        React + TypeScript UI
+                  |
+                  v
+          FastAPI Backend
+                  |
+          +-------+--------+
+          |                |
+          v                v
+    Ticket Workflows   RAG Pipeline
+                           |
+                           v
+                 Knowledge Base Search
+                           |
+                           v
+                 PostgreSQL + pgvector
+                           |
+                           v
+                   Retrieved Context
+                           |
+                           v
+                  Google Gemini API
+                           |
+                           v
+                 Cited Response Draft
+                           |
+                           v
+                 Human Review Queue
+                           |
+                 +---------+---------+
+                 |         |         |
+                 v         v         v
+               Approve   Reject   Escalate
+```
+
+*Actual response delivery requires a separate email integration.*
 
 ## Architecture
 
-`
-SupportPilot/
-├── backend/          # Python FastAPI + SQLAlchemy + pgvector
-├── frontend/         # React + TypeScript + Vite + Tailwind CSS
-├── docker-compose.yml  # PostgreSQL + pgvector local dev
-└── README.md
-`
+SupportPilot follows a frontend/backend architecture with a relational database and vector search.
 
-## Technology Stack
+| Layer | Technology | Responsibility |
+|---|---|---|
+| Frontend | React, TypeScript, Vite | User interface and support workflows |
+| Styling | Tailwind CSS | Responsive UI styling |
+| Backend | Python, FastAPI | API endpoints and application logic |
+| ORM and migrations | SQLAlchemy, Alembic | Database access and schema migrations |
+| Database | PostgreSQL 16 | Persistent application data |
+| Vector search | pgvector | Semantic retrieval over document embeddings |
+| AI generation | Google Gemini API | Answer drafting and ticket classification |
+| Embeddings | `text-embedding-004` | Vector representations of knowledge-base text |
+| Authentication | JWT, `python-jose`, `passlib` | Authenticated access |
+| Testing | Pytest, HTTPX | Automated backend tests |
+| Local infrastructure | Docker Compose | Local PostgreSQL and pgvector setup |
 
-| Layer | Technology |
-|-------|-----------|
-| Frontend | React 18, TypeScript, Vite, Tailwind CSS, Lucide Icons, Recharts |
-| Backend | Python 3.11, FastAPI, SQLAlchemy 2.x, Alembic |
-| Database | PostgreSQL 16 + pgvector (768-dim embeddings) |
-| AI Engine | Google Gemini API (gemini-2.0-flash + text-embedding-004) |
-| Auth | JWT (python-jose + passlib) |
-| Testing | Pytest, httpx test client |
+## AI and RAG Pipeline
 
-## Prerequisites
+The AI support workflow follows these steps:
+
+1. **Document ingestion:** Extract text from supported knowledge-base files.
+2. **Chunking:** Divide the text into overlapping chunks to preserve context across boundaries.
+3. **Embedding generation:** Convert chunks into 768-dimensional vectors.
+4. **Vector storage:** Store embeddings and associated content in PostgreSQL using pgvector.
+5. **Semantic retrieval:** Retrieve relevant chunks using vector similarity and configurable retrieval parameters.
+6. **Answer generation:** Provide the retrieved context to Gemini to generate a response.
+7. **Citation and review:** Present a draft with supporting sources for agent verification.
+8. **Evaluation:** Assess retrieval and response quality using the built-in evaluation workflow.
+
+### Design decisions
+
+- **Vector similarity search:** PostgreSQL and pgvector keep application data and vector retrieval within the same database system.
+- **Overlapping chunks:** The configured chunk size and overlap help retain context across document boundaries.
+- **Grounded generation:** Retrieved passages provide the evidence used to construct answers.
+- **Abstention and escalation:** When sufficient evidence is unavailable, the system can avoid unsupported answers or recommend escalation.
+- **Human approval:** Response generation and customer delivery are separate operations.
+
+## Security and Responsible AI
+
+SupportPilot incorporates several safeguards:
+
+- **Authentication:** JWT-based authentication for protected workflows.
+- **Role-based access control:** Agent and admin roles.
+- **Input validation:** Pydantic schemas validate structured request and AI output data.
+- **Prompt-injection resistance:** Retrieved document content is treated as untrusted data rather than as instructions that can override system behavior.
+- **Backend authorization:** Document-level access checks are performed in the backend service layer.
+- **Auditability:** Sensitive actions such as approval, rejection, escalation, and administrative changes are audit-logged.
+- **Controlled delivery:** Generated drafts require a separate approval and sending workflow.
+
+These safeguards reduce risk but do not eliminate every possible security or AI failure. Production use requires additional security testing and operational monitoring.
+
+## Getting Started
+
+### Prerequisites
+
+Install the following:
 
 - Python 3.11+
 - Node.js 18+
-- Docker Desktop (for PostgreSQL with pgvector)
-- Google Gemini API key (get one free at https://aistudio.google.com)
+- Docker Desktop
+- A Google Gemini API key from [Google AI Studio](https://aistudio.google.com/)
 
-## Quick Start
+### 1. Clone the repository
 
-### 1. Start the Database
+```bash
+git clone https://github.com/sgeethika-05/SupportPilot.git
+cd SupportPilot
+```
 
-`ash
-docker-compose up -d
-`
+### 2. Start PostgreSQL with pgvector
 
-This starts PostgreSQL 16 with the pgvector extension on port 5432.
+Ensure Docker Desktop is running.
 
-### 2. Backend Setup
+```bash
+docker compose up -d
+```
 
-`ash
+This starts the database services defined in `docker-compose.yml`.
+
+### 3. Configure the backend
+
+Open a terminal in the project root:
+
+```bash
 cd backend
-
-# Create virtual environment
 python -m venv .venv
-.venv\Scripts\activate   # Windows
-# source .venv/bin/activate  # macOS/Linux
+```
 
-# Install dependencies
+Activate the virtual environment.
+
+**Windows PowerShell:**
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+**macOS/Linux:**
+
+```bash
+source .venv/bin/activate
+```
+
+Install the dependencies:
+
+```bash
 pip install -r requirements.txt
+```
 
-# Configure environment
+Create your local environment file:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+On macOS/Linux, use:
+
+```bash
 cp .env.example .env
-# Edit .env and set your GEMINI_API_KEY
+```
 
-# Run database migrations
+Edit `backend/.env` and configure your database URL, a strong secret key, and Gemini API key.
+
+Run the database migrations:
+
+```bash
 alembic upgrade head
+```
 
-# (Optional) Seed demo data
+Optionally, create demo data:
+
+```bash
 python scripts/seed_demo.py
+```
 
-# Start the server
+Start the backend:
+
+```bash
 uvicorn app.main:app --reload --port 8000
-`
+```
 
-Backend API: http://localhost:8000  
-API docs: http://localhost:8000/docs  
+Backend API: http://localhost:8000
+
+Interactive API documentation: http://localhost:8000/docs
+
 Health check: http://localhost:8000/api/health
 
-### 3. Frontend Setup
+### 4. Configure the frontend
 
-`ash
+Open a second terminal from the project root:
+
+```bash
 cd frontend
-
-# Install dependencies
 npm install
+```
 
-# Configure environment
+Create the frontend environment file:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+On macOS/Linux:
+
+```bash
 cp .env.example .env
+```
 
-# Start dev server
+The default local API URL is:
+
+```env
+VITE_API_URL=http://localhost:8000
+```
+
+Start the frontend:
+
+```bash
 npm run dev
-`
+```
 
-Frontend: http://localhost:5173
+Open http://localhost:5173 in your browser.
 
-## Demo Credentials
+### 5. Demo credentials
 
-After running the seed script:
+If you run the seed script, the project README configuration provides these demo accounts:
 
 | Role | Email | Password |
-|------|-------|----------|
-| Admin | admin@supportpilot.demo | demo1234 |
-| Agent | agent@supportpilot.demo | demo1234 |
+|---|---|---|
+| Admin | `admin@supportpilot.demo` | `demo1234` |
+| Agent | `agent@supportpilot.demo` | `demo1234` |
+
+These are for local demo use only. Do not use demo credentials in a production environment.
 
 ## Environment Variables
 
-### Backend (.env)
+### Backend
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| DATABASE_URL | PostgreSQL connection string | ✅ |
-| SECRET_KEY | JWT signing secret (256-bit) | ✅ |
-| GEMINI_API_KEY | Google Gemini API key | ✅ |
-| ALGORITHM | JWT algorithm (default: HS256) | ❌ |
-| ACCESS_TOKEN_EXPIRE_MINUTES | Token lifetime (default: 1440) | ❌ |
-| EMBEDDING_DIMENSIONS | Vector dimensions (default: 768) | ❌ |
-| DEFAULT_TOP_K | RAG retrieval count (default: 5) | ❌ |
-| MIN_SIMILARITY_THRESHOLD | Min cosine similarity (default: 0.7) | ❌ |
+| Variable | Purpose |
+|---|---|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `SECRET_KEY` | Secret used for JWT signing |
+| `GEMINI_API_KEY` | Google Gemini API access |
+| `ALGORITHM` | JWT signing algorithm; default `HS256` |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | Token lifetime |
+| `EMBEDDING_DIMENSIONS` | Embedding vector dimensions; default `768` |
+| `DEFAULT_TOP_K` | Number of retrieved chunks; default `5` |
+| `MIN_SIMILARITY_THRESHOLD` | Minimum similarity threshold; default `0.7` |
 
-### Frontend (.env)
+Refer to `backend/.env.example` for the complete configuration, including chunking and application settings.
 
-| Variable | Description |
-|----------|-------------|
-| VITE_API_URL | Backend URL (default: http://localhost:8000) |
+### Frontend
+
+| Variable | Purpose |
+|---|---|
+| `VITE_API_URL` | Backend API base URL; defaults to `http://localhost:8000` |
+
+**Never commit real API keys, passwords, database credentials, or production secrets.** Use environment variables and the deployment platform's secret configuration.
 
 ## Running Tests
 
-`ash
-cd backend
+From the backend directory, activate the virtual environment and run:
+
+```bash
 pytest tests/ -v
+```
 
-# With coverage
+To generate a coverage report, if pytest-cov is installed:
+
+```bash
 pytest tests/ -v --cov=app --cov-report=html
-`
+```
 
-## Application Features
+The test suite covers application areas including authentication, ticket workflows, documents, drafts, RAG, evaluation, dashboard behavior, and security.
 
-### A. Dashboard
-Real metrics from database: ticket counts, urgency distribution, resolution stats, KB statistics.
+## Project Structure
 
-### B. Ticket Management
-Create, list, filter, search, assign tickets. Status tracking with PostgreSQL persistence.
+```text
+SupportPilot/
+├── backend/
+│   ├── alembic/              # Database migrations
+│   ├── app/
+│   │   ├── api/routes/       # API route handlers
+│   │   ├── core/             # Configuration and security
+│   │   ├── db/               # Database session setup
+│   │   ├── models/           # SQLAlchemy models
+│   │   ├── schemas/          # Pydantic schemas
+│   │   ├── services/         # AI, RAG, ingestion and evaluation
+│   │   └── main.py           # FastAPI application
+│   ├── scripts/              # Demo data utilities
+│   ├── tests/                # Automated tests
+│   ├── requirements.txt
+│   └── .env.example
+├── frontend/
+│   ├── src/
+│   │   ├── components/       # Reusable UI components
+│   │   ├── context/          # Authentication context
+│   │   ├── pages/            # Application pages
+│   │   ├── services/         # API client
+│   │   └── types/             # TypeScript definitions
+│   ├── package.json
+│   └── .env.example
+├── docker-compose.yml
+├── .gitignore
+└── README.md
+```
 
-### C. AI Copilot
-Ask support questions → RAG retrieves relevant KB passages → Gemini generates grounded answer with citations. Low-confidence answers trigger escalation.
+## Limitations and Future Improvements
 
-### D. Knowledge Base Ingestion
-Upload PDF/TXT/MD files → extract text → chunk with overlap → generate embeddings → store in pgvector. Track ingestion status.
+The following integrations and capabilities are not fully implemented in the current version:
 
-### E. RAG Lab
-Test semantic search interactively. View similarity scores, chunk rankings, configurable top-k and threshold.
+- **Email delivery:** Actual email sending requires an SMTP or SendGrid integration.
+- **Real-time updates:** The current approach uses polling; WebSocket-based updates remain a potential improvement.
+- **Single sign-on:** OAuth2/SSO integration is a future extension beyond the current JWT authentication.
+- **Production deployment:** A production release requires environment-specific configuration, security testing, and deployment verification.
 
-### F. AI Classification
-Gemini classifies ticket category, urgency, confidence, escalation recommendation. Pydantic validates all outputs. Manual override supported.
+## Repository
 
-### G. Draft Generation & Approval
-Generate cited response drafts. Never auto-sent. Edit → Approve → Escalate workflow. Separate send action (email integration noted as out-of-scope).
+**GitHub:** [sgeethika-05/SupportPilot](https://github.com/sgeethika-05/SupportPilot)
 
-### H. Review Queue
-Human review queue for low-confidence drafts. Approve, reject with reason, or escalate. Audit trail preserved.
-
-### I. AI Evaluation
-Run retrieval and generation evaluations. Measure Recall@K, groundedness, citation precision. Clearly distinguishes auto-scored vs manually verified metrics.
-
-### J. Security
-JWT auth, RBAC (agent/admin), input validation, audit logs, prompt injection resistance (documents treated as untrusted data).
-
-## Deployment
-
-### Frontend → Vercel
-
-1. Push rontend/ to GitHub
-2. Import in Vercel dashboard
-3. Set build command: 
-pm run build
-4. Set output directory: dist
-5. Add env var: VITE_API_URL=https://your-backend.onrender.com
-
-### Backend → Render
-
-1. Create new Web Service
-2. Connect GitHub repo
-3. Set runtime: Python 3.11
-4. Build command: pip install -r requirements.txt && alembic upgrade head
-5. Start command: uvicorn app.main:app --host 0.0.0.0 --port 
-6. Add all env vars from .env.example
-
-### Database → Render PostgreSQL (with pgvector)
-
-1. Create PostgreSQL service on Render (or use Supabase/Neon)
-2. Enable pgvector extension:
-   `sql
-   CREATE EXTENSION IF NOT EXISTS vector;
-   `
-3. Set DATABASE_URL in backend env vars
-
-## Architecture Decisions
-
-- **pgvector cosine distance**: Used <=> operator for cosine similarity search
-- **768 dimensions**: text-embedding-004 produces 768-dim vectors
-- **Chunking**: 512 words per chunk, 64-word overlap for context continuity
-- **Draft safety**: All drafts show "DRAFT — NOT SENT" banner; approval and sending are separate
-- **Grounding**: Drafts only cite content from retrieved KB chunks; unsupported claims trigger escalation
-- **Demo data**: Seed script creates data flagged as demo; UI clearly labels demo records
-
-## Security Notes
-
-- Documents are treated as untrusted data — document content cannot override system prompts
-- Prompt injection resistance: user input is parameter-substituted, not concatenated into system instructions
-- Document-level access checks happen in the backend service layer, not just frontend
-- All sensitive actions (approve, reject, escalate, admin changes) are audit-logged
-
-## Incomplete / External Integrations
-
-- **Email sending**: Draft approval marks status; actual email delivery requires SMTP/SendGrid integration (instructions in Settings page)
-- **Real-time updates**: Polling-based status updates; WebSocket upgrade path documented
-- **SSO/OAuth**: JWT auth implemented; OAuth2 provider integration is a documented next step
+Built as a full-stack AI engineering project exploring retrieval-augmented generation, semantic search, human review workflows, and evaluation of AI-assisted support systems.
