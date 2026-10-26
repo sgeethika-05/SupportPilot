@@ -13,6 +13,7 @@ SupportPilot is a full-stack application built around Retrieval-Augmented Genera
 - [How It Works](#how-it-works)
 - [Architecture](#architecture)
 - [Technology Stack](#technology-stack)
+- [Application Screenshots](#application-screenshots)
 - [AI and RAG Pipeline](#ai-and-rag-pipeline)
 - [Security and Responsible AI](#security-and-responsible-ai)
 - [Getting Started](#getting-started)
@@ -151,6 +152,25 @@ SupportPilot follows a frontend/backend architecture with a relational database 
 | Authentication | JWT, `python-jose`, `passlib` | Authenticated access |
 | Testing | Pytest, HTTPX | Automated backend tests |
 | Local infrastructure | Docker Compose | Local PostgreSQL and pgvector setup |
+
+## Application Screenshots
+
+Screenshots of the main SupportPilot workflows.
+
+### Dashboard
+![SupportPilot Dashboard](screenshots/dashboard.png)
+
+### Ticket Management
+![SupportPilot Tickets](screenshots/tickets.png)
+
+### AI Copilot
+![SupportPilot AI Copilot](screenshots/ai-copilot.png)
+
+### RAG Lab
+![SupportPilot RAG Lab](screenshots/rag-lab.png)
+
+### AI Evaluation
+![SupportPilot AI Evaluation](screenshots/ai-evaluation.png)
 
 ## AI and RAG Pipeline
 
@@ -415,3 +435,4 @@ The following integrations and capabilities are not fully implemented in the cur
 **GitHub:** [sgeethika-05/SupportPilot](https://github.com/sgeethika-05/SupportPilot)
 
 Built as a full-stack AI engineering project exploring retrieval-augmented generation, semantic search, human review workflows, and evaluation of AI-assisted support systems.
+
