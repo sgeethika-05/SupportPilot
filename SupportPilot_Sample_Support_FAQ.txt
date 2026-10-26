@@ -1,0 +1,55 @@
+
+# SupportPilot Sample Support FAQ
+
+## Login Problems
+
+If a customer cannot log in to their account:
+
+1. Ask the customer to verify that they are using the correct registered email address.
+2. If they have forgotten their password, direct them to the password reset option.
+3. If resetting the password does not resolve the issue, collect the error message and escalate the issue to technical support.
+4. Never ask the customer to share their password.
+
+## Duplicate Billing
+
+If a customer reports being charged twice for the same subscription:
+
+1. Ask the customer for the dates of both transactions and their payment reference numbers.
+2. Check whether both transactions were completed successfully.
+3. Do not promise or confirm a refund before the billing team reviews the transactions.
+4. Escalate suspected duplicate charges to the billing support team for investigation.
+5. Keep the customer informed about the investigation and follow the company's refund policy.
+
+## Refund Requests
+
+If a customer requests a refund:
+
+1. Explain that refund eligibility depends on the applicable product policy and transaction details.
+2. Ask for the order or transaction reference.
+3. Forward the request to the billing team for review.
+4. Do not guarantee refund approval before the billing team makes a decision.
+
+## API 403 Errors
+
+If a customer reports an API 403 Forbidden error:
+
+1. Ask them to verify that their API key is valid and has the required permissions and access scope.
+2. Ask which endpoint returned the error.
+3. If the issue continues, collect the timestamp and request ID, if available.
+4. Never ask the customer to share secret API keys publicly.
+5. Escalate unresolved issues to technical support.
+
+## App Crashes
+
+If the application crashes:
+
+1. Ask the customer to update the application and restart it.
+2. If the problem continues, collect the device model, operating system version, app version, and steps that reproduce the crash.
+3. Escalate repeated crashes to technical support.
+
+## Human Review and Safety
+
+1. Do not invent company policies or unsupported troubleshooting steps.
+2. Do not promise refunds without approval from the billing team.
+3. Do not claim an issue is fixed without evidence.
+4. All AI-generated replies must be reviewed and explicitly approved by a human support agent before being sent.
